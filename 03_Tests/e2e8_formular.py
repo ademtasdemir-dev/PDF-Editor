@@ -19,7 +19,7 @@ def vals(pdf):
 
 def session(pdf, fn, flat=False, shot=None):
   with sync_playwright() as p:
-    b = p.chromium.launch(); pg = b.new_page(viewport={'width':1300, 'height':1100}, accept_downloads=True)
+    b = getattr(p, __import__("os").environ.get("BROWSER", "chromium")).launch(); pg = b.new_page(viewport={'width':1300, 'height':1100}, accept_downloads=True)
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('console', lambda m: m.type == 'error' and errs.append(m.text))
     pg.goto(EDITOR); pg.set_input_files('#file', str(pdf))
     pg.wait_for_function('document.getElementById("status").textContent.includes("Seite(n)")', timeout=60000)

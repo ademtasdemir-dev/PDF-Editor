@@ -4,7 +4,7 @@ import pathlib
 EDITOR=(pathlib.Path(__file__).resolve().parent.parent/'01_Programm'/'LAGZERO-PDF-Editor.html').as_uri()
 def run(pdf, out, acts, shot=None):
   with sync_playwright() as p:
-    b=p.chromium.launch(); pg=b.new_page(viewport={'width':1300,'height':1000}, accept_downloads=True)
+    b=getattr(p, __import__("os").environ.get("BROWSER", "chromium")).launch(); pg=b.new_page(viewport={'width':1300,'height':1000}, accept_downloads=True)
     errs=[]; pg.on('pageerror',lambda e:errs.append('PAGEERR '+str(e))); pg.on('console',lambda m: m.type=='error' and errs.append('CONSOLE '+m.text))
     pg.goto(EDITOR); pg.set_input_files('#file',pdf)
     try: pg.wait_for_selector('.ln',timeout=60000)

@@ -4,7 +4,7 @@
 import os
 HERE = os.path.dirname(os.path.abspath(__file__))
 L = os.path.join(HERE, 'node_modules')
-VERSION = '2.5.0'   # auch in 05_Windows-App/package.json ändern
+VERSION = '2.5.1'   # auch in 05_Windows-App/package.json ändern
 t = open(os.path.join(HERE, 'editor-quelle.html'), encoding='utf-8').read()
 t = t.replace('/*VERSION*/', VERSION)
 esc = lambda s: s.replace('</script', '<\\/script')

@@ -1,6 +1,6 @@
 {
   "name": "lagzero-pdf-editor",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "LAGZERO PDF Editor – Text in PDFs ändern, offline",
   "main": "main.js",
   "scripts": {
