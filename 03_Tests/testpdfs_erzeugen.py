@@ -33,3 +33,22 @@ for pg in range(40):
     for i in range(45): c.drawString(50,800-i*17,f'Seite {pg+1} Zeile {i+1}: Lorem ipsum dolor sit amet consectetur.')
     c.showPage()
 c.save()
+# 12 Formular mit allen Feldarten (V2.5: Formular ausfüllen)
+from reportlab.lib.colors import HexColor, white
+c=canvas.Canvas('formular2.pdf',pagesize=A4); f=c.acroForm
+c.setFont('Helvetica-Bold',16); c.drawString(72,790,'Antrag auf Testleistung')
+c.setFont('Helvetica',11)
+c.drawString(72,750,'Vorname:'); f.textfield(name='vorname',x=170,y=744,width=180,height=20,borderColor=HexColor('#888888'),fillColor=HexColor('#eef3ff'),fontSize=11)
+c.drawString(72,720,'Nachname:'); f.textfield(name='nachname',x=170,y=714,width=180,height=20,value='Muster',fontSize=11)
+c.drawString(72,690,'PLZ:'); f.textfield(name='plz',x=170,y=684,width=70,height=20,maxlen=5,fontSize=11)
+c.drawString(72,660,'Geschlecht:')
+for i,v in enumerate(['m','w','d']):
+  f.radio(name='geschlecht',value=v,x=170+i*60,y=656,size=14,selected=(v=='w')); c.drawString(188+i*60,659,v)
+c.drawString(72,630,'Zustimmung:'); f.checkbox(name='zustimmung',x=170,y=626,size=14,checked=False)
+c.drawString(72,600,'Newsletter:'); f.checkbox(name='newsletter',x=170,y=596,size=14,checked=True)
+c.drawString(72,570,'Bundesland:'); f.choice(name='land',x=170,y=564,width=150,height=20,options=['Bayern','Hessen','Berlin'],value='Bayern',fontSize=11)
+c.drawString(72,535,'Kurs:'); f.listbox(name='kurs',x=170,y=480,width=150,height=60,options=['FISI','FIAE','Kaufmann'],value='FIAE',fontSize=10)
+c.drawString(72,450,'Bemerkung:'); f.textfield(name='bemerkung',x=170,y=380,width=300,height=80,fieldFlags='multiline',fontSize=10)
+c.drawString(72,350,'Aktenzeichen:'); f.textfield(name='az',x=170,y=344,width=180,height=20,value='AZ-2026-001',fieldFlags='readOnly',fontSize=11)
+c.drawString(72,300,'Unterschrift / Ort, Datum (kein Feld):'); c.line(72,270,350,270)
+c.save()

@@ -108,6 +108,21 @@ button.report.alarm{background:#2a0b0e;border-color:var(--accent);color:#fff;ani
 .box .steps{font-size:12px;color:var(--muted);margin:12px 0 0}
 .box .done{color:#9ee8bd}
 .ver{color:#6f7a85}
+/* Formular ausfüllen: echte Eingabefelder über den PDF-Feldern */
+.fl{position:absolute;inset:0;pointer-events:none;z-index:3}
+.ff{position:absolute;pointer-events:auto;box-sizing:border-box;margin:0;padding:0 2px;border:0;border-radius:0;
+  font-family:Helvetica,Arial,sans-serif;color:#000;background:transparent;outline:none;line-height:1.15}
+.ff.tint{background:rgba(204,215,255,.55)}
+textarea.ff{resize:none;padding:2px;white-space:pre-wrap;overflow:auto}
+select.ff{padding:0 1px;appearance:auto}
+input[type=checkbox].ff,input[type=radio].ff{accent-color:#1a1a1a;cursor:pointer}
+.ff:hover{outline:1px solid #5865f2}
+.ff:focus{outline:2px solid #5865f2}
+.ff:disabled{cursor:not-allowed;opacity:1}
+body.m-form .ff.tint{background:rgba(160,180,255,.5)}
+body.m-form .ln{pointer-events:none}
+body.m-form .layer{cursor:text}
+.clean .ff{outline:none!important}.clean .ff.tint{background:transparent!important}
 @media(max-width:700px){.logo{text-align:left}#status{margin-left:0;width:100%}.sep{display:none}}
 </style>
 </head>
@@ -134,6 +149,8 @@ button.report.alarm{background:#2a0b0e;border-color:var(--accent);color:#fff;ani
       <button id="mLine" class="on" title="Eine einzelne Zeile ändern">Zeile</button>
       <button id="mPara" title="Einen ganzen Absatz ändern, der Text wird neu umbrochen">Absatz</button>
       <button id="mAdd" title="Irgendwo klicken und neuen Text setzen">Text hinzufügen</button>
+      <button id="mForm" title="Formular ausfüllen: Felder anklicken und ausfüllen. Bei Formularen ohne Felder an die Stelle klicken, wo du schreiben willst.">Formular</button>
+      <label class="small" id="flatWrap" hidden title="Die ausgefüllten Werte werden fest ins PDF gedruckt und lassen sich danach nicht mehr ändern (z. B. für Ämter)"><input type="checkbox" id="fFlat"> Felder fest einbrennen</label>
     </div>
     <span class="sep"></span>
     <div class="grp">
@@ -171,6 +188,7 @@ button.report.alarm{background:#2a0b0e;border-color:var(--accent);color:#fff;ani
       <li><b>Zeile:</b> Textzeile anklicken und ändern.</li>
       <li><b>Absatz:</b> Absatz anklicken und als Ganzes umschreiben. Der Text wird beim Speichern passend zur Absatzbreite umbrochen.</li>
       <li><b>Text hinzufügen:</b> an eine freie Stelle klicken und schreiben.</li>
+      <li><b>Formular:</b> ausfüllbare Felder (Textfelder, Kästchen, Auswahllisten) direkt ausfüllen. Bei Formularen ohne Felder an die Stelle klicken, wo du schreiben willst.</li>
       <li><b>PDF speichern:</b> die bearbeitete Kopie landet im Download-Ordner. Das Original bleibt unverändert.</li>
     </ol>
     <p class="note">Tipp: In Chrome oder Edge einmal „Schriften vom PC freigeben“ klicken. Dann findet der Editor fehlende Buchstaben automatisch in den installierten Schriften.</p>
@@ -269,13 +287,13 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(
 const $ = id => document.getElementById(id);
 const main = $('main');
 const S = {bytes:null, name:'dokument.pdf', mode:'line', edits:[], active:null, lastInfo:null,
-           fonts:{}, local:null, manual:{}, ctxs:[], meta:null};
+           fonts:{}, local:null, manual:{}, ctxs:[], meta:null, acts:[], form:{fields:new Map(), changed:new Set()}};
 
 const APP_VERSION = '/*VERSION*/';
 const LOG = window.__lzLog;
 const log = (k, m, alarm) => LOG.add(k, m, alarm);
 const status = t => { $('status').textContent = t; if (!/^Seite \d+ von \d+/.test(t)) log('info', 'Status: ' + t); };
-const refresh = () => { $('undo').disabled = !S.edits.length; $('save').disabled = !S.bytes; };
+const refresh = () => { $('undo').disabled = !S.acts.length; $('save').disabled = !S.bytes; };
 
 // ============ Schrift-Hilfen ============
 const norm = s => (s||'').toLowerCase().replace(/^[a-z]{6}\+/,'').replace(/[^a-z0-9]/g,'');
@@ -614,6 +632,7 @@ document.addEventListener('drop', e => {
 
 async function load(file){
   S.name = file.name; S.edits = []; S.active = null; S.fonts = {}; S.manual = {}; S.lastInfo = null; S.ctxs = []; S.meta = null;
+  S.acts = []; S.form = {fields:new Map(), changed:new Set()}; $('flatWrap').hidden = true; $('fFlat').checked = false;
   log('info', 'PDF öffnen: ' + file.name + ' (' + Math.round(file.size/1024) + ' KB)');
   $('fontChip').hidden = true; $('fontFileBtn').hidden = true;
   status('Lade ' + file.name + ' …');
@@ -636,7 +655,15 @@ async function load(file){
   const hint = document.createElement('p'); hint.className = 'hint';
   hint.textContent = 'Gescannte Seiten bestehen nur aus Bildern und enthalten keinen erkennbaren Text. Dort hilft nur „Text hinzufügen“.';
   main.appendChild(hint);
-  status(S.name + ' · ' + pdf.numPages + ' Seite(n)');
+  const nF = S.form.fields.size;
+  S.meta.formularFelder = nF;
+  if (nF){
+    $('flatWrap').hidden = false;
+    setMode('form');
+    status(S.name + ' · ' + pdf.numPages + ' Seite(n) · Formular mit ' + nF + ' Feld' + (nF > 1 ? 'ern' : '') + ' erkannt: Felder anklicken und ausfüllen');
+  } else {
+    status(S.name + ' · ' + pdf.numPages + ' Seite(n)' + (S.meta.xfa ? ' · Achtung: XFA-Formular, Felder können nicht ausgefüllt werden. „Text hinzufügen“ geht.' : ''));
+  }
   refresh();
 }
 
@@ -663,9 +690,15 @@ async function renderPage(pdf, num, avail){
   cv.width = Math.floor(W*dpr); cv.height = Math.floor(H*dpr);
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
   const layer = document.createElement('div'); layer.className = 'layer';
-  pin.append(cv, layer); wrap.append(no, pin); main.appendChild(wrap);
+  const flayer = document.createElement('div'); flayer.className = 'fl';
+  pin.append(cv, layer, flayer); wrap.append(no, pin); main.appendChild(wrap);
 
-  await page.render({canvasContext:cv.getContext('2d'), viewport:vp, transform: dpr!==1 ? [dpr,0,0,dpr,0,0] : null}).promise;
+  // Ausfüllbare Felder: pdf.js lässt sie bei ENABLE_FORMS aus dem Bild weg, wir legen echte Eingabefelder darüber
+  let annots = [];
+  try { annots = await page.getAnnotations({intent:'display'}); } catch(err){ log('warn', 'Seite ' + num + ': Anmerkungen nicht lesbar: ' + LOG.fmt([err])); }
+  const widgets = annots.filter(canOverlay);
+  await page.render({canvasContext:cv.getContext('2d'), viewport:vp, transform: dpr!==1 ? [dpr,0,0,dpr,0,0] : null,
+    annotationMode: widgets.length ? pdfjsLib.AnnotationMode.ENABLE_FORMS : pdfjsLib.AnnotationMode.ENABLE}).promise;
   // zweites Rendern ohne Anmerkungen: daraus werden Text- und Hintergrundfarbe gelesen
   const sc = document.createElement('canvas'); sc.width = Math.floor(vp.width); sc.height = Math.floor(vp.height);
   const sctx = sc.getContext('2d', {willReadFrequently:true});
@@ -694,9 +727,10 @@ async function renderPage(pdf, num, avail){
     layer.appendChild(el);
   }
   for (const b of groupBlocks(lines)){ b.lines.forEach(l => { l.block = b; l.el.classList.add('inpara'); }); }
+  if (widgets.length) addFormWidgets(widgets, ctx, flayer);
 
   layer.addEventListener('click', ev => {
-    if (S.mode !== 'add' || ev.target !== layer) return;
+    if ((S.mode !== 'add' && S.mode !== 'form') || ev.target !== layer) return;
     const size = parseFloat($('fSize').value) || 11;
     const [x, y] = vp.convertToPdfPoint(ev.offsetX, ev.offsetY + size*scale*0.8);
     addAt(ctx, x, y, size);
@@ -708,6 +742,118 @@ function addAt(ctx, x, y, size){
       bold: info ? info.bold : $('fBold').classList.contains('on'), italic: info ? info.italic : $('fItal').classList.contains('on'),
       color:S.userColor || '#000000', bg:null, orig:'', hide:[], ctx};
     makeEditor(e, '');
+}
+
+// ============ Formular ausfüllen ============
+const FF_EDIT = 1 << 18;
+// Nur Felder, die pdf.js bei ENABLE_FORMS aus dem Bild nimmt (Unterschriften, Knöpfe, schreibgeschützte Textfelder bleiben im Bild)
+function canOverlay(a){
+  if (a.subtype !== 'Widget' || a.hasOwnCanvas || a.noHTML || a.hidden || !a.fieldName) return false;
+  if (a.fieldType === 'Tx' || a.fieldType === 'Ch') return true;
+  return a.fieldType === 'Btn' && !a.pushButton && (a.checkBox || a.radioButton);
+}
+function formField(a){
+  const F = S.form.fields;
+  if (F.has(a.fieldName)) return F.get(a.fieldName);
+  const type = a.fieldType === 'Tx' ? 'text' : a.fieldType === 'Ch' ? (a.combo ? 'combo' : 'list') : a.checkBox ? 'check' : a.radioButton ? 'radio' : null;
+  if (!type) return null;
+  let v;
+  if (type === 'text') v = a.fieldValue == null ? '' : String(a.fieldValue).replace(/\r\n?/g, '\n');
+  else if (type === 'check' || type === 'radio') v = a.fieldValue && a.fieldValue !== 'Off' ? String(a.fieldValue) : 'Off';
+  else { const arr = [].concat(a.fieldValue == null ? [] : a.fieldValue).map(String); v = type === 'combo' ? (arr[0] || '') : arr; }
+  const f = {name:a.fieldName, type, value:v, orig:JSON.stringify(v), els:[], options:a.options || [], readOnly:!!a.readOnly};
+  F.set(a.fieldName, f);
+  return f;
+}
+function formSync(f, src){
+  for (const el of f.els){
+    if (el === src) continue;
+    if (f.type === 'text' || f.type === 'combo') el.value = f.value;
+    else if (f.type === 'check' || f.type === 'radio') el.checked = f.value === el.dataset.on;
+    else for (const o of el.options) o.selected = f.value.includes(o.value);
+  }
+}
+function formCommit(f, prev){
+  if (prev === JSON.stringify(f.value)) return;
+  S.acts.push({form:f.name, prev});
+  if (JSON.stringify(f.value) === f.orig) S.form.changed.delete(f.name); else S.form.changed.add(f.name);
+  log('info', 'Formularfeld geändert: ' + f.name + ' (' + f.type + ')');
+  refresh();
+}
+function addFormWidgets(widgets, ctx, flayer){
+  const {vp, scale} = ctx;
+  // Reihenfolge für die Tab-Taste: von oben nach unten, links nach rechts
+  widgets.sort((a, b) => Math.abs(b.rect[3] - a.rect[3]) > 4 ? b.rect[3] - a.rect[3] : a.rect[0] - b.rect[0]);
+  for (const a of widgets){
+    const f = formField(a); if (!f) continue;
+    const r = vp.convertToViewportRectangle(a.rect);
+    const L = Math.min(r[0], r[2]), T = Math.min(r[1], r[3]), W = Math.abs(r[2] - r[0]), H = Math.abs(r[3] - r[1]);
+    const hPt = Math.abs(a.rect[3] - a.rect[1]);
+    const da = a.defaultAppearanceData || {};
+    const fsPt = da.fontSize > 0 ? da.fontSize : a.multiLine || f.type === 'list' ? 10 : Math.max(6, Math.min(12, (hPt - 4) * 0.72));
+    const fc = da.fontColor && da.fontColor.length >= 3 ? 'rgb(' + da.fontColor[0] + ',' + da.fontColor[1] + ',' + da.fontColor[2] + ')' : '#000';
+    let el;
+    if (f.type === 'text'){
+      el = document.createElement(a.multiLine ? 'textarea' : 'input');
+      if (!a.multiLine) el.type = a.password ? 'password' : 'text';
+      if (a.maxLen > 0) el.maxLength = a.maxLen;
+      el.value = f.value;
+      if (a.comb && a.maxLen > 0){
+        const cell = W / a.maxLen, gap = Math.max(0, cell - fsPt*scale*0.6);
+        Object.assign(el.style, {fontFamily:'"Courier New",Courier,monospace', letterSpacing:gap + 'px', paddingLeft:(gap/2) + 'px'});
+      }
+      el.style.textAlign = ['left', 'center', 'right'][a.textAlignment || 0] || 'left';
+      el.addEventListener('focus', () => { el.dataset.prev = JSON.stringify(f.value); });
+      el.addEventListener('input', () => { f.value = el.value; formSync(f, el); });
+      el.addEventListener('change', () => formCommit(f, el.dataset.prev));
+    } else if (f.type === 'check' || f.type === 'radio'){
+      el = document.createElement('input');
+      el.type = f.type === 'check' ? 'checkbox' : 'radio';
+      el.name = 'lzf:' + f.name;
+      el.dataset.on = String(f.type === 'check' ? (a.exportValue || 'Yes') : a.buttonValue);
+      el.checked = f.value === el.dataset.on;
+      const sz = Math.min(W, H) * 0.86;
+      Object.assign(el.style, {width:sz + 'px', height:sz + 'px'});
+      el.addEventListener('change', () => {
+        const prev = JSON.stringify(f.value);
+        f.value = el.checked ? el.dataset.on : 'Off';
+        formSync(f, el); formCommit(f, prev);
+      });
+    } else {
+      el = document.createElement('select');
+      if (f.type === 'list'){ el.multiple = !!a.multiSelect; el.size = Math.max(2, f.options.length); }
+      const opts = f.options.slice();
+      const cur = [].concat(f.value);
+      for (const v of cur) if (v && !opts.some(o => o.exportValue === v)) opts.push({exportValue:v, displayValue:v});
+      if (f.type === 'combo' && !cur[0]) opts.unshift({exportValue:'', displayValue:''});
+      for (const o of opts){
+        const op = document.createElement('option');
+        op.value = o.exportValue; op.textContent = o.displayValue == null ? o.exportValue : o.displayValue;
+        op.selected = cur.includes(o.exportValue); el.appendChild(op);
+      }
+      if (f.type === 'combo' && (a.fieldFlags & FF_EDIT)) el.title = 'Auswahlliste (eigene Eingaben sind in diesem Feld erlaubt, hier aber nur Auswahl)';
+      el.addEventListener('change', () => {
+        const prev = JSON.stringify(f.value);
+        f.value = f.type === 'combo' ? el.value : [...el.selectedOptions].map(o => o.value);
+        formSync(f, el); formCommit(f, prev);
+      });
+    }
+    el.className = 'ff';
+    el.dataset.field = f.name;
+    if (f.readOnly){ el.disabled = true; }
+    const bw = a.borderColor && a.borderStyle && a.borderStyle.width > 0 ? Math.max(1, a.borderStyle.width * scale) : 0;
+    Object.assign(el.style, {left:L + 'px', top:T + 'px', fontSize:(fsPt*scale) + 'px', color:fc});
+    if (f.type === 'check' || f.type === 'radio'){
+      // Kästchen mittig ins Feld setzen
+      const sz = parseFloat(el.style.width);
+      Object.assign(el.style, {left:(L + (W - sz)/2) + 'px', top:(T + (H - sz)/2) + 'px'});
+    } else Object.assign(el.style, {width:W + 'px', height:H + 'px'});
+    if (a.backgroundColor) el.style.background = 'rgb(' + [...a.backgroundColor].join(',') + ')';
+    else el.classList.add('tint');
+    if (bw && f.type !== 'check' && f.type !== 'radio') el.style.border = bw + 'px solid rgb(' + [...a.borderColor].join(',') + ')';
+    f.els.push(el);
+    flayer.appendChild(el);
+  }
 }
 
 // Textstücke zu Zeilen zusammenfassen
@@ -842,7 +988,7 @@ function makeEditor(e, text){
   });
   ed.addEventListener('input', () => { updateFont(e); if (e.type==='para') checkOverflow(e); });
   e.ctx.layer.appendChild(ed);
-  S.edits.push(e); refresh();
+  S.edits.push(e); S.acts.push('edit'); refresh();
   log('info', 'Bearbeiten #' + S.edits.length + ': ' + e.type + ' auf Seite ' + (e.page+1) + ', Schrift ' + (e.info ? e.info.base : '–') + ', ' + (Math.round(e.size*10)/10) + ' pt');
   updateFont(e);
   ed.focus();
@@ -887,7 +1033,17 @@ for (const [id, key] of [['fBold','bold'],['fItal','italic']]){
   $(id).addEventListener('click', () => { $(id).classList.toggle('on'); if (S.active){ S.active[key] = $(id).classList.contains('on'); updateFont(S.active); }});
 }
 $('undo').addEventListener('click', () => {
-  const e = S.edits.pop(); if (!e) return;
+  const act = S.acts.pop(); if (!act) return;
+  if (act.form){
+    const f = S.form.fields.get(act.form);
+    if (f){
+      f.value = JSON.parse(act.prev); formSync(f, null);
+      if (act.prev === f.orig) S.form.changed.delete(f.name); else S.form.changed.add(f.name);
+      log('info', 'Rückgängig: Formularfeld ' + f.name);
+    }
+    return refresh();
+  }
+  const e = S.edits.pop(); if (!e) return refresh();
   log('info', 'Rückgängig: ' + e.type + ' auf Seite ' + (e.page+1));
   e.el.remove();
   e.hide.forEach(l => { l.el.hidden = false; delete l.el.dataset.done; });
@@ -900,10 +1056,18 @@ function setMode(m){
   S.mode = m; log('info', 'Modus: ' + m);
   document.body.className = document.body.className.replace(/\bm-\w+/g, '').trim() + ' m-' + m;
   $('mLine').classList.toggle('on', m==='line'); $('mPara').classList.toggle('on', m==='para'); $('mAdd').classList.toggle('on', m==='add');
+  $('mForm').classList.toggle('on', m==='form');
 }
 $('mLine').addEventListener('click', () => setMode('line'));
 $('mPara').addEventListener('click', () => setMode('para'));
 $('mAdd').addEventListener('click', () => setMode('add'));
+$('mForm').addEventListener('click', () => {
+  setMode('form');
+  if (!S.bytes) return;
+  const n = S.form.fields.size;
+  status(n ? 'Formular: ' + n + ' Feld' + (n > 1 ? 'er' : '') + ' zum Ausfüllen (blau markiert). Freie Stelle anklicken = Text hinzufügen.'
+           : 'Dieses PDF hat keine ausfüllbaren Felder. Einfach an die Stelle klicken, wo du schreiben willst (z. B. ein X ins Kästchen).');
+});
 
 // ============ Speichern ============
 function hexToRgb(h){ const n = parseInt((h||'#000000').slice(1), 16); return PDFLib.rgb(((n>>16)&255)/255, ((n>>8)&255)/255, (n&255)/255); }
@@ -938,7 +1102,9 @@ function wrapText(widthOf, text, maxW){
 $('save').addEventListener('click', async () => {
   if (!S.bytes) return;
   status('Speichere …');
-  log('info', 'Speichern mit ' + S.edits.length + ' Änderung(en)');
+  // falls ein Formularfeld noch den Fokus hat (kein „change“-Ereignis): Werte abgleichen
+  for (const f of S.form.fields.values()){ if (JSON.stringify(f.value) !== f.orig) S.form.changed.add(f.name); else S.form.changed.delete(f.name); }
+  log('info', 'Speichern mit ' + S.edits.length + ' Änderung(en)' + (S.form.changed.size ? ' und ' + S.form.changed.size + ' Formularfeld(ern)' : ''));
   const warnings = [];
   try {
     const doc = await PDFLib.PDFDocument.load(S.bytes, {ignoreEncryption:true});
@@ -1017,6 +1183,7 @@ $('save').addEventListener('click', async () => {
       }
     }
     for (const [pg, key, info] of patchList) patchWidths(pg, key, info);
+    if (S.form.changed.size || ($('fFlat').checked && S.form.fields.size)) await saveForm(doc, warnings);
     warnings.forEach(w => log('warn', 'Hinweis beim Speichern: ' + w));
     const out = await doc.save();
     const blob = new Blob([out], {type:'application/pdf'});
@@ -1032,6 +1199,82 @@ $('save').addEventListener('click', async () => {
     status('Speichern fehlgeschlagen: ' + err.message);
   }
 });
+
+// Formularwerte in die echten PDF-Felder schreiben (das Formular bleibt ausfüllbar, außer „fest einbrennen“)
+async function saveForm(doc, warnings){
+  const P = PDFLib;
+  let form;
+  try { form = doc.getForm(); } catch(err){ log('error', 'Formular nicht lesbar: ' + LOG.fmt([err]), true); warnings.push('Die Formularfelder konnten nicht gespeichert werden.'); return; }
+  try { if (form.hasXFA()) { form.deleteXFA(); log('info', 'XFA-Daten entfernt (sonst zeigt Acrobat die alten Werte)'); } } catch(_) {}
+  const list = [...S.form.changed].map(n => S.form.fields.get(n)).filter(Boolean);
+  // Schrift: Helvetica, wenn alle Zeichen passen, sonst eingebaute DejaVu Sans (z. B. für ğ ş ı İ)
+  const helv = await doc.embedFont(P.StandardFonts.Helvetica);
+  let font = helv;
+  const texts = list.filter(f => f.type !== 'check' && f.type !== 'radio').flatMap(f => [].concat(f.value));
+  if (texts.some(t => { try { helv.encodeText(t); return false; } catch(_) { return true; } })){
+    const b = bundled('dejavusans', false, false);
+    if (b){ font = await doc.embedFont(b.bytes, {subset:true}); log('info', 'Formular: Sonderzeichen gefunden, Schrift DejaVu Sans eingebettet'); }
+  }
+  const look = f => { const o = f.options.find(o => o.exportValue === f.value); return o && o.displayValue != null ? o.displayValue : f.value; };
+  const withDA = (fld, fn) => {
+    try { fn(); } catch(err){
+      if (!/DA|default appearance/i.test(err.message)) throw err;
+      fld.acroField.setDefaultAppearance('/Helv 0 Tf 0 g'); fn();
+    }
+  };
+  let ok = 0;
+  for (const f of list){
+    try {
+      if (f.type === 'text'){
+        const t = form.getTextField(f.name);
+        let v = f.value;
+        const max = t.getMaxLength();
+        if (max && v.length > max){ v = v.slice(0, max); warnings.push('Feld „' + f.name + '“: nur ' + max + ' Zeichen erlaubt, Rest abgeschnitten.'); }
+        if (!t.isMultiline()) v = v.replace(/\s*\n\s*/g, ' ');
+        t.setText(v || undefined);
+        withDA(t, () => t.updateAppearances(font));
+      } else if (f.type === 'check'){
+        const c = form.getCheckBox(f.name);
+        if (f.value === 'Off') c.uncheck(); else c.check();
+      } else if (f.type === 'radio'){
+        const r = form.getRadioGroup(f.name);
+        if (f.value === 'Off') r.clear(); else r.select(f.value);
+      } else if (f.type === 'combo'){
+        const d = form.getDropdown(f.name);
+        if (!f.value) d.clear(); else d.select(look(f));
+        withDA(d, () => d.updateAppearances(font));
+      } else {
+        const o = form.getOptionList(f.name);
+        const names = f.value.map(v => { const x = f.options.find(o => o.exportValue === v); return x && x.displayValue != null ? x.displayValue : v; });
+        if (!names.length) o.clear(); else o.select(names);
+        withDA(o, () => o.updateAppearances(font));
+      }
+      ok++;
+    } catch(err){
+      log('error', 'Formularfeld ' + f.name + ' (' + f.type + ') nicht gespeichert: ' + LOG.fmt([err]), true);
+      warnings.push('Feld „' + f.name + '“ konnte nicht gespeichert werden.');
+    }
+  }
+  // Haben jetzt alle Felder ein fertiges Aussehen, soll der Betrachter es nicht neu erzeugen (sonst Fehler bei Sonderzeichen)
+  try {
+    const allAp = form.getFields().every(fld => fld.acroField.getWidgets().every(w => w.getAppearances && w.getAppearances()));
+    if (ok && allAp && font !== helv) form.acroForm.dict.set(P.PDFName.of('NeedAppearances'), P.PDFBool.False);
+  } catch(_) {}
+  if ($('fFlat').checked){
+    try {
+      form.flatten();
+      // pdf-lib lässt bei Optionsknöpfen tote Verweise in /Annots stehen (Adobe/Poppler melden dann „Invalid XRef“): aufräumen
+      let n = 0;
+      for (const pg of doc.getPages()){
+        const an = pg.node.Annots(); if (!an) continue;
+        for (let i = an.size() - 1; i >= 0; i--){ const r = an.get(i); if (r instanceof P.PDFRef && !doc.context.lookup(r)){ an.remove(i); n++; } }
+      }
+      log('info', 'Formular fest eingebrannt' + (n ? ', ' + n + ' tote Verweise entfernt' : ''));
+    }
+    catch(err){ log('error', 'Einbrennen fehlgeschlagen: ' + LOG.fmt([err]), true); warnings.push('Die Felder konnten nicht eingebrannt werden, sie bleiben ausfüllbar.'); }
+  }
+  log('info', 'Formular gespeichert: ' + ok + ' von ' + list.length + ' geänderten Feldern' + ($('fFlat').checked ? ', eingebrannt' : ''));
+}
 
 function showModal(name, warnings){
   $('mFile').textContent = 'Datei: ' + name + (/Electron/.test(navigator.userAgent) ? '' : ' (im Download-Ordner)');
@@ -1090,6 +1333,9 @@ function collectReport(withTexts){
       userAgent:navigator.userAgent},
     pdf:S.bytes ? Object.assign({datei:S.name, mitgeschickt:false}, S.meta || {}) : null,
     schriften:fonts, aenderungen:edits, modus:S.mode, fehlerAnzahl:LOG.alarms,
+    formular:S.form.fields.size ? {felder:S.form.fields.size, geaendert:S.form.changed.size, einbrennen:$('fFlat').checked,
+      arten:[...S.form.fields.values()].reduce((m, f) => (m[f.type] = (m[f.type] || 0) + 1, m), {}),
+      werte: withTexts ? [...S.form.changed].map(n => ({feld:n, art:S.form.fields.get(n).type, wert:S.form.fields.get(n).value})) : undefined} : null,
     // ohne Haken keine Dokumenttexte: zitierte Textstellen im Protokoll werden geschwärzt
     protokoll:LOG.list.map(l => l.t + 's ' + l.k.toUpperCase() + ' ' + (withTexts ? l.m : l.m.replace(/„[^“]*“/g, '„…“')))
   };
@@ -1109,6 +1355,12 @@ function reportText(R){
     if (a.text) L.push('     vorher: ' + a.text.vorher, '     nachher: ' + a.text.nachher);
     else L.push('     Textlänge ' + a.laengeVorher + ' → ' + a.laengeNachher + ' Zeichen (Texte nicht mitgeschickt)');
   });
+  if (R.formular){
+    const F = R.formular;
+    L.push('', 'FORMULAR: ' + F.felder + ' Felder (' + Object.entries(F.arten).map(([k, v]) => v + ' ' + k).join(', ') + '), ' + F.geaendert + ' geändert' + (F.einbrennen ? ', fest einbrennen' : ''));
+    if (F.werte) F.werte.forEach(w => L.push('  ' + w.feld + ' (' + w.art + '): ' + JSON.stringify(w.wert)));
+    else if (F.geaendert) L.push('  (Werte nicht mitgeschickt)');
+  }
   L.push('', 'PROTOKOLL (letzte Einträge)', ...R.protokoll.slice(-120).map(l => '  ' + l));
   return L.join('\n');
 }
@@ -1229,6 +1481,13 @@ window.__lzDebug = {
     if (a.art === 'para' && a.groesse !== e.size) e.lead = e.lead * a.groesse / e.size;
     Object.assign(e, {size:a.groesse, bold:a.fett, italic:a.kursiv, color:a.farbe});
     place(e); select(e); updateFont(e); return 'ok';
+  },
+  // Formularfeld setzen wie ein Mensch (für Tests und das Nachstell-Skript)
+  form(name, value){
+    const f = S.form.fields.get(name); if (!f) return 'Feld ' + name + ' nicht gefunden';
+    const prev = JSON.stringify(f.value);
+    f.value = f.type === 'list' ? [].concat(value) : f.type === 'check' && value === true ? f.els[0].dataset.on : f.type === 'check' && value === false ? 'Off' : String(value);
+    formSync(f, null); formCommit(f, prev); return 'ok';
   }
 };
 window.__lz = S;

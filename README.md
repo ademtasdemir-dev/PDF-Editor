@@ -6,7 +6,7 @@ Kostenloser PDF-Editor als **eine einzige HTML-Datei**. Läuft komplett offline 
 
 ## Download & Start
 
-**Windows-App (empfohlen):** [`Download/LAGZERO-PDF-Editor-2.4.0-portable.exe`](Download/LAGZERO-PDF-Editor-2.4.0-portable.exe)
+**Windows-App (empfohlen):** [`Download/LAGZERO-PDF-Editor-2.5.0-portable.exe`](Download/LAGZERO-PDF-Editor-2.5.0-portable.exe)
 öffnen → rechts „Download raw file“ (⤓) → doppelklicken. Keine Installation nötig.
 Beim ersten Start zeigt Windows evtl. „Unbekannter Herausgeber“ → *Weitere Informationen* → *Trotzdem ausführen*.
 
@@ -19,6 +19,7 @@ PDF öffnen, Text ändern, „PDF speichern“. Das Original bleibt unverändert
 - **Zeile:** eine Zeile anklicken und ändern
 - **Absatz:** ganzen Absatz ändern, wird passend neu umbrochen
 - **Text hinzufügen:** an beliebiger Stelle
+- **Formular ausfüllen** (neu in 2.5): Textfelder, Kästchen, Optionsfelder und Auswahllisten in ausfüllbaren PDFs direkt ausfüllen. Die Werte landen in den echten PDF-Feldern (Formular bleibt ausfüllbar) oder werden auf Wunsch **fest eingebrannt**. Umlaute und türkische Buchstaben (ğ ş ı İ) gehen. Bei Formularen ohne Felder: an die Stelle klicken und schreiben.
 - Schrift, Größe, Fett/Kursiv, Farbe, Hintergrund/Textmarker werden übernommen
 - **Originalschrift aus dem PDF**; fehlen Buchstaben (PDFs enthalten meist nur die benutzten), nimmt der Editor
   eine PC-Schrift, eine eingebaute gleich aussehende Schrift (Carlito ≙ Calibri, Caladea ≙ Cambria, DejaVu)
@@ -30,6 +31,7 @@ PDF öffnen, Text ändern, „PDF speichern“. Das Original bleibt unverändert
 - Bearbeitungsgeschützte (verschlüsselte) PDFs werden nicht gespeichert.
 - Der alte Text wird abgedeckt, nicht aus der Datei entfernt. Nicht zum Schwärzen geeignet.
 - Text rutscht nicht nach wie in Word.
+- Dynamische XFA-Formulare (manche Behörden-PDFs aus Adobe LiveCycle) lassen sich nicht ausfüllen; dort hilft „Text hinzufügen“.
 
 ## Selbst bauen
 ```

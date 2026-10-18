@@ -1,3 +1,4 @@
+import re, pathlib
 # Test für „Fehler melden“: Fehler auslösen, Hinweis prüfen, Bericht als ZIP speichern und Inhalt prüfen
 # Aufruf: python3 e2e7_fehlerbericht.py [ausgabeordner]
 import sys, json, zipfile, pathlib
@@ -55,7 +56,7 @@ with sync_playwright() as p:
         check(len(R['aenderungen']) == 3 and [a['art'] for a in R['aenderungen']] == ['line', 'para', 'add'], 'drei Änderungen erfasst')
         check(R['aenderungen'][0]['text']['nachher'] == 'Rechnung Nr. 4712', 'Text mitgeschickt (mit Haken)')
         check(any('Testfehler' in l and 'ERROR' in l for l in R['protokoll']), 'Absturz steht im Protokoll')
-        check(R['version'] == '2.4.0' and R['beschreibung'].startswith('Testlauf'), 'Version + Beschreibung')
+        check(R['version'] == re.search(r"VERSION = '([\d.]+)'", (pathlib.Path(__file__).resolve().parent.parent/'02_Quellcode'/'build.py').read_text(encoding='utf-8')).group(1) and R['beschreibung'].startswith('Testlauf'), 'Version + Beschreibung')
         check('href="bericht.txt"' in z.read('INHALT.html').decode(), 'INHALT.html verlinkt die Dateien')
         (OUT/'bericht-beispiel.txt').write_bytes(z.read('bericht.txt'))
     # ohne Haken: keine Texte, kein PDF

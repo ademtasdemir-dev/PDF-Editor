@@ -20,6 +20,7 @@ Was die App zusätzlich kann:
 - Links (Discord) öffnen im normalen Browser
 
 Test: `apptest.js` (Node + playwright-core, startet die App, öffnet ein PDF, bearbeitet, speichert).
+Test „Formular ausfüllen“: `node apptest_formular.js ../03_Tests/testpdfs/formular2.pdf ausgabe`.
 Test „Fehler melden“: `node apptest_bericht.js ../03_Tests/testpdfs/lo.pdf ausgabe` (unter Linux mit `xvfb-run -a`).
 
 Version ändern: `02_Quellcode/build.py` (VERSION) **und** `package.json` (version).

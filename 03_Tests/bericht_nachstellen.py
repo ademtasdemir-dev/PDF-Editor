@@ -53,6 +53,13 @@ with sync_playwright() as p:
         pg.keyboard.press('Control+A'); pg.keyboard.type(text.replace('\n', ' ') if a['art'] != 'para' else text)
         pg.evaluate('a => __lzDebug.style(a)', a); pg.wait_for_timeout(250)
         print('  #%d %s -> Chip: %s' % (a['nr'], a['art'], pg.inner_text('#fontChip')))
+    F = R.get('formular') or {}
+    if F.get('werte'):   # ab V2.5: Formularwerte (nur wenn „Texte mitschicken“ angehakt war)
+        for w in F['werte']:
+            print('  Formularfeld %s -> %s' % (w['feld'], pg.evaluate('w => __lzDebug.form(w.feld, w.wert)', w)))
+    elif F.get('geaendert'):
+        print('  Formular: %d Felder geändert, Werte nicht im Bericht' % F['geaendert'])
+    if F.get('einbrennen'): pg.check('#fFlat')
     pg.mouse.click(5, 5)
     with pg.expect_download(timeout=60000) as d: pg.click('#save')
     d.value.save_as(ergebnis); pg.wait_for_timeout(400)
