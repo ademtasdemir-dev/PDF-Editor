@@ -24,7 +24,7 @@ Ein kostenloser, offline laufender PDF-Editor als einzelne HTML-Datei, als Alter
   3. **Mischen:** vorhandene Zeichen in Originalschrift, nur fehlende Zeichen aus der besten Ersatzschrift (Hinweis im Chip, z. B. „nur Q J y fehlen“).
   4. Erst dann ganze Zeile in Helvetica/Times/Courier mit Warnung.
 - Design: **LAG|ZERØ** (schwarz/silber/rot, Eyebrow „ʟᴀɢᴢᴇʀᴏ // PDF EDITOR“, Logo „LAG|ZERØ VERIFIED“, Slogan „TESTED. MEASURED. OPTIMIZED.“, Copyright-Zeile wie auf den anderen LAGZERO-Seiten, Vorlage: lagzero-lab/de/nvidia-verstehen.html).
-- Nach jedem Speichern Pop-up: „Dieses Programm wurde programmiert von Adem Tasdemir“, Kontakt über Discord, Button + QR-Code zu https://discord.gg/TjRhpfgu2c.
+- Nach jedem Speichern Pop-up: „Dieses Programm wurde programmiert von Adem Tasdemir“, Kontakt über Discord, Button + QR-Code zu https://discord.gg/wUFMj2dGX8.
 - Downloads zusätzlich immer als ZIP; bei Dateisammlungen ein anklickbares HTML-Inhaltsverzeichnis.
 
 ## Formular ausfüllen (neu in 2.5)

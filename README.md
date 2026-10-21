@@ -46,4 +46,4 @@ Fehlerbericht nachstellen: `python 03_Tests/bericht_nachstellen.py Fehlerbericht
 Electron (MIT), pdf.js (Apache-2.0), pdf-lib (MIT), @pdf-lib/fontkit (MIT). Schriften: Carlito und Caladea (SIL OFL 1.1), DejaVu (Bitstream Vera / DejaVu License) – siehe `02_Quellcode/schriften/LIZENZ-*.txt`.
 
 ---
-Programmiert von **Adem Tasdemir** · Kontakt über [Discord](https://discord.gg/TjRhpfgu2c)
+Programmiert von **Adem Tasdemir** · Kontakt über [Discord](https://discord.gg/wUFMj2dGX8)
