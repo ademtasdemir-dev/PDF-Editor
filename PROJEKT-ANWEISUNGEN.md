@@ -4,9 +4,9 @@ Diesen Text in die **Anweisungen** des claude.ai-Projekts einfügen. Die Ordner 
 
 **Aktueller Stand: Version 2.5.1 (18.10.2026)** – neu: **Formular ausfüllen** (2.5.1 = nach Massentest mit 107 echten Formularen repariert; 2.5.0 hatte Fehler bei Optionsfeldern, Auswahllisten, Einbrennen). Seit 2.4 Knopf „Fehler melden“, seit 2.3 auch als Windows-App (portable .exe).
 
-Download Windows-App: https://github.com/sikkkilaci/PDF-Editor/blob/main/Download/LAGZERO-PDF-Editor-2.5.1-portable.exe
+Download Windows-App: https://github.com/ademtasdemir-dev/PDF-Editor/blob/main/Download/LAGZERO-PDF-Editor-2.5.1-portable.exe
 
-GitHub: https://github.com/sikkkilaci/PDF-Editor
+GitHub: https://github.com/ademtasdemir-dev/PDF-Editor
 
 ## Ziel
 Ein kostenloser, offline laufender PDF-Editor als einzelne HTML-Datei, als Alternative zu Adobe Acrobat. Ursprünglich für einen Bekannten von Adem, der Text in einem PDF ändern will, ohne Online-Dienste zu nutzen. Die Formatierung soll so originalgetreu wie möglich erhalten bleiben.
@@ -42,7 +42,7 @@ Ein kostenloser, offline laufender PDF-Editor als einzelne HTML-Datei, als Alter
 - Bei einem echten Fehler (Absturz, Speichern/Öffnen fehlgeschlagen, Seite nicht anzeigbar) erscheint unten rechts ein Hinweis mit Knopf, der Fehler-Knopf zeigt einen roten Zähler. Harmlose Meldungen (z. B. pdf.js-„fake worker“ bei file://) lösen keinen Alarm aus.
 - Dialog: Beschreibung, Haken „Geänderte Texte mitschicken“ und „Original-PDF mitschicken“ (beide standardmäßig **aus**; ohne Haken werden auch zitierte Texte im Protokoll geschwärzt), Vorschau des Berichts.
 - **Bericht speichern (ZIP):** `INHALT.html` (anklickbar), `bericht.txt`, `bericht.json`, ggf. `original.pdf`. Alles offline, eigener ZIP-Schreiber ohne Bibliothek.
-- **Auf GitHub melden:** öffnet https://github.com/sikkkilaci/PDF-Editor/issues/new mit ausgefülltem Titel/Text, ZIP dort hineinziehen (GitHub-Konto nötig). **Text kopieren** + **Discord** für alle ohne GitHub.
+- **Auf GitHub melden:** öffnet https://github.com/ademtasdemir-dev/PDF-Editor/issues/new mit ausgefülltem Titel/Text, ZIP dort hineinziehen (GitHub-Konto nötig). **Text kopieren** + **Discord** für alle ohne GitHub.
 - **Reparieren:** `python 03_Tests/bericht_nachstellen.py Fehlerbericht_….zip` liest den Bericht, öffnet das Original-PDF headless, öffnet jede Änderung an derselben Stelle wieder (über `window.__lzDebug`), setzt Text (oder Platzhalter mit Umlauten, wenn keine Texte dabei sind), Größe, Farbe, Fett/Kursiv, speichert und legt Vorher/Nachher-Bilder ab.
 - Windows-App: ZIP-Speichern-Dialog mit ZIP-Filter, Zwischenablage erlaubt, GitHub-Link im normalen Browser.
 

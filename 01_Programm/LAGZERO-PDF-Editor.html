@@ -1506,7 +1506,7 @@ $('mClose').addEventListener('click', () => { $('modal').hidden = true; });
 $('modal').addEventListener('click', ev => { if (ev.target === $('modal')) $('modal').hidden = true; });
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape'){ $('modal').hidden = true; $('rmodal').hidden = true; } });
 // ============ Fehlerbericht ============
-const REPO = 'https://github.com/sikkkilaci/PDF-Editor';
+const REPO = 'https://github.com/ademtasdemir-dev/PDF-Editor';
 const isApp = /Electron/.test(navigator.userAgent);
 const r1 = v => Math.round(v*10)/10;
 function showAlarm(msg){

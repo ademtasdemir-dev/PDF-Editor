@@ -25,7 +25,7 @@ PDF öffnen, Text ändern, „PDF speichern“. Das Original bleibt unverändert
   eine PC-Schrift, eine eingebaute gleich aussehende Schrift (Carlito ≙ Calibri, Caladea ≙ Cambria, DejaVu)
   oder ergänzt nur die fehlenden Buchstaben
 - Tabellen, Spalten, Aufzählungen und gedrehte Seiten werden erkannt
-- **Fehler melden:** Knopf oben rechts. Erstellt offline einen Fehlerbericht (ZIP) zum Verschicken über [GitHub-Issues](https://github.com/sikkkilaci/PDF-Editor/issues) oder Discord. Texte und PDF nur, wenn man es anhakt.
+- **Fehler melden:** Knopf oben rechts. Erstellt offline einen Fehlerbericht (ZIP) zum Verschicken über [GitHub-Issues](https://github.com/ademtasdemir-dev/PDF-Editor/issues) oder Discord. Texte und PDF nur, wenn man es anhakt.
 
 ## Grenzen
 - Bearbeitungsgeschützte (verschlüsselte) PDFs werden nicht gespeichert.

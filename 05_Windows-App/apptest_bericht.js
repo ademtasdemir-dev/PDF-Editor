@@ -30,7 +30,7 @@ let ok = true; const check = (c, m) => { console.log((c ? '  OK   ' : '  FEHL ')
   const n0 = app.windows().length; await win.click('#rGit'); await win.waitForTimeout(800);
   const ext = await app.evaluate(() => global.__ext);
   check(app.windows().length === n0 && win.url().startsWith('file:'), 'GitHub öffnet kein App-Fenster, Editor bleibt');
-  check(ext.length === 1 && ext[0].startsWith('https://github.com/sikkkilaci/PDF-Editor/issues/new?'), 'GitHub-Link geht an den normalen Browser');
+  check(ext.length === 1 && ext[0].startsWith('https://github.com/ademtasdemir-dev/PDF-Editor/issues/new?'), 'GitHub-Link geht an den normalen Browser');
   await win.click('#rCopy'); await win.waitForTimeout(400);
   const clip = await app.evaluate(({ clipboard }) => clipboard.readText());
   check(clip.startsWith('LAGZERO PDF Editor – Fehlerbericht') && clip.includes('Windows-App (Electron'), 'Text kopiert (Zwischenablage), Programm = Windows-App');
